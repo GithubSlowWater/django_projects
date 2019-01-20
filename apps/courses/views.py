@@ -5,7 +5,7 @@ from django.views.generic import View
 from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse
 
-from .models import Course
+from .models import Course, Lesson
 # Create your views here.
 
 
@@ -36,4 +36,27 @@ class CourseListView(View):
             'all_course': courses,
             'sort': sort,
             'hot_courses': hot_courses
+        })
+
+
+class CourseDetailView(View):
+    """
+    课程详情页
+    """
+    def get(self, request, course_id):
+        course = Course.objects.get(id=int(course_id))
+
+        # 增加课程点击数
+        course.click_num += 1
+        course.save()
+
+        # 相关课程推荐
+        tag = course.tag
+        if tag:
+            relate_course = Course.objects.filter(tag=tag)[:1]
+        else:
+            relate_course = []
+        return render(request, "course-detail.html", {
+            'course': course,
+            'relate_course': relate_course
         })
