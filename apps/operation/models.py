@@ -29,6 +29,9 @@ class CourseComments(models.Model):
         verbose_name = "课程评论"
         verbose_name_plural = verbose_name
 
+    def __str__(self):
+        return self.comments
+
 
 class UserFavorite(models.Model):
     user = models.ForeignKey(UserProfile, verbose_name="用户")
