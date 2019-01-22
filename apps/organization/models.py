@@ -49,6 +49,7 @@ class Teacher(models.Model):
     work_position = models.CharField(max_length=50, verbose_name="公司职位")
     points = models.CharField(max_length=50, verbose_name="教学特点")
     fav_num = models.IntegerField(default=0, verbose_name="收藏数")
+    age = models.IntegerField(default=18, verbose_name="教师年龄")
     click_num = models.IntegerField(default=0, verbose_name="点击数")
     image = models.ImageField(default="",upload_to="teachers/%Y/%m", verbose_name="封面图", max_length=100)
     add_time = models.DateTimeField(default=datetime.now, verbose_name="添加时间")

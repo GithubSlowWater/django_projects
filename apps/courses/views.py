@@ -6,7 +6,8 @@ from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse
 
 from .models import Course, Lesson, CourseResource
-from operation.models import UserFavorite, CourseComments
+from operation.models import UserFavorite, CourseComments, UserCourse
+from utils.mixin_utils import LoginRequiredMixin
 # Create your views here.
 
 
@@ -75,20 +76,35 @@ class CourseDetailView(View):
         })
 
 
-class CourseInfoView(View):
+class CourseInfoView(LoginRequiredMixin, View):
     """
     课程章节信息
     """
     def get(self, request, course_id):
         course = Course.objects.get(id=int(course_id))
+
+        # 查询用户是否已经关联了该课程
+        user_courses = UserCourse.objects.filter(user=request.user, course=course)
+        if not user_courses:
+            user_course = UserCourse(user=request.user, course=course)
+            user_course.save()
+
+        user_cousers = UserCourse.objects.filter(course=course)
+        user_ids = [user_couser.user.id for user_couser in user_cousers]
+        all_user_courses = UserCourse.objects.filter(user_id__in=user_ids)
+        # 取出所有课程id
+        course_ids = [user_couser.course.id for user_couser in all_user_courses]
+        # 获取学过该用户学过其他的所有课程
+        relate_courses = Course.objects.filter(id__in=course_ids).order_by("-click_num")[:5]
         all_resources = CourseResource.objects.filter(course=course)
         return render(request, "course-video.html", {
-            'course': course,
-            'course_resoures': all_resources
+            "course": course,
+            "course_resources": all_resources,
+            "relate_courses": relate_courses
         })
 
 
-class CourseCommentView(View):
+class CourseCommentView(LoginRequiredMixin, View):
     """
     课程评论
     """
@@ -115,7 +131,7 @@ class AddComentsView(View):
 
         course_id = request.POST.get("course_id", 0)
         comments = request.POST.get("comments", "")
-        if course_id > 0 and comments:
+        if int(course_id) > 0 and comments:
             course_comments = CourseComments()
             course = Course.objects.get(id=int(course_id))
             course_comments.course = course
