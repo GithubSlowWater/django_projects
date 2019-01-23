@@ -4,7 +4,9 @@ from django.shortcuts import render
 from django.views.generic import View
 from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpResponse
+from django.db.models import Q
 
+from courses.models import Course
 from .models import CourseOrg, CityDict, Teacher
 from .forms import UserAskForm
 from operation.models import UserFavorite
@@ -15,6 +17,13 @@ class OrglistView(View):
     '''
     def get(self, request):
         all_orgs = CourseOrg.objects.all()
+
+        # 机构搜索
+        search_keyword = request.GET.get('keywords', "")
+        if search_keyword:
+            all_orgs = all_orgs.filter(Q(name__icontains=search_keyword) | Q(desc__icontains=search_keyword) | Q(
+                detail__icontains=search_keyword))
+
         # 排名
         hot_orgs = all_orgs.order_by("-click_num")[:3]
         # 取出城市
@@ -189,7 +198,21 @@ class TeacherListView(View):
     课程讲师列表页
     """
     def get(self, request):
-        all_teacher = Teacher.objects.all()
+        all_teachers = Teacher.objects.all()
+
+        # 讲师搜索
+        search_keywords = request.GET.get('keywords', "")
+        if search_keywords:
+            all_teachers = all_teachers.filter(Q(name__icontains=search_keywords) |
+                                               Q(work_company__icontains=search_keywords) |
+                                               Q(work_position__icontains=search_keywords))
+
+        sort = request.GET.get('sort', "")
+        if sort:
+            if sort == "hot":
+                all_teachers = all_teachers.order_by("-click_num")
+
+        sorted_teacher = Teacher.objects.all().order_by("-click_num")[:3]
 
         # 对讲师列表进行分页
         try:
@@ -197,8 +220,38 @@ class TeacherListView(View):
         except PageNotAnInteger:
             page = 1
 
-        p = Paginator(all_teacher, 1, request=request)
+        p = Paginator(all_teachers, 1, request=request)
         teachers = p.page(page)
         return render(request, "teachers-list.html", {
-            'all_teacher': all_teacher,
+            'all_teachers': all_teachers,
+            'sort': sort,
+            'sorted_teacher': sorted_teacher
+        })
+
+
+class TeacherDetailView(View):
+    def get(self, request, teacher_id):
+        teacher = Teacher.objects.get(id=int(teacher_id))
+        teacher.click_num += 1
+        teacher.save()
+        all_courses = Course.objects.filter(teacher=teacher)
+
+        has_teacher_faved = False
+        if request.user.is_authenticated():
+            if UserFavorite.objects.filter(user=request.user, fav_type=3, fav_id=teacher.id):
+                has_teacher_faved = True
+
+        has_org_faved = False
+        if request.user.is_authenticated():
+            if UserFavorite.objects.filter(user=request.user, fav_type=2, fav_id=teacher.org.id):
+                has_org_faved = True
+
+        #讲师排行
+        sorted_teacher = Teacher.objects.all().order_by("-click_num")[:3]
+        return render(request, "teacher-detail.html", {
+            "teacher":teacher,
+            "all_courses":all_courses,
+            "sorted_teacher":sorted_teacher,
+            "has_teacher_faved": has_teacher_faved,
+            "has_org_faved":has_org_faved
         })
