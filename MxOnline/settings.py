@@ -144,10 +144,10 @@ STATICFILES_DIRS = [
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = "smtp.sina.cn"
 EMAIL_POST = 25
-EMAIL_HOST_USER = "17666242401@sina.cn"
-EMAIL_HOST_PASSWORD = "MINGQU43520"
+EMAIL_HOST_USER = "mobile@sina.cn"
+EMAIL_HOST_PASSWORD = "xxxxx"
 EMAIL_USE_TLS = False
-EMAIL_FROM = "17666242401@sina.cn"
+EMAIL_FROM = "mobile@sina.cn"
 
 
 MEDIA_URL = '/media/'
